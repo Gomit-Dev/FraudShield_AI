@@ -1,6 +1,7 @@
 Structure of folder:-
 
 AI-Fraud-Detector/
+│
 │── backend/  
 │   ├── app.py  (Flask backend with fraud detection logic)  
 │   ├── fraud_detection_model.pkl  (Pre-trained ML model)  
