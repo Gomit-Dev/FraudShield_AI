@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection</title>
+</head>
+<body>
+    <h1>Fraud Detection System</h1>
+    <form id="fraudForm">
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" name="amount" required>
+        <button type="submit">Check Fraud</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('fraudForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const amount = document.getElementById('amount').value;
+            
+            fetch('https://your-heroku-app-name.herokuapp.com/detect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ amount: parseFloat(amount) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerText = `Fraud detected: ${data.fraud}`;
+            })
+            .catch(error => {
+                document.getElementById('result').innerText = 'Error occurred';
+            });
+        });
+    </script>
+</body>
+</html>
