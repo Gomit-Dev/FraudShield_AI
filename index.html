@@ -3,38 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fraud Detection</title>
+    <title>Fraud Detector</title>
 </head>
 <body>
-    <h1>Fraud Detection System</h1>
-    <form id="fraudForm">
-        <label for="amount">Amount:</label>
-        <input type="number" id="amount" name="amount" required>
-        <button type="submit">Check Fraud</button>
-    </form>
-
-    <div id="result"></div>
+    <h2>Check for Fraud</h2>
+    <input type="number" id="amount" placeholder="Enter amount">
+    <button onclick="detectFraud()">Detect Fraud</button>
+    <p id="result"></p>
 
     <script>
-        document.getElementById('fraudForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-            const amount = document.getElementById('amount').value;
-            
-            fetch('https://your-heroku-app-name.herokuapp.com/detect', {
+        async function detectFraud() {
+            let amount = document.getElementById("amount").value;
+            let response = await fetch('https://fraud-detector-backend.onrender.com/detect', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount: parseFloat(amount) })
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('result').innerText = `Fraud detected: ${data.fraud}`;
-            })
-            .catch(error => {
-                document.getElementById('result').innerText = 'Error occurred';
             });
-        });
+
+            let data = await response.json();
+            document.getElementById("result").innerText = "Result: " + data.result;
+        }
     </script>
 </body>
 </html>
