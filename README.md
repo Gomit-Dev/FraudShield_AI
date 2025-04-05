@@ -1,64 +1,36 @@
----
-1. **FraudShield_AI 🛡️**  
-   Example:
-   ```markdown
-   # 
-   AI-powered fraud detection assistant with interactive visualizations and Google sign-in.
-   ```
+# 🛡️ FraudShield_AI
 
-2. **Live Demo Link**  
-   ```markdown
-   🚀 [Live Demo](https://gomit-dev.github.io/FraudShield_AI/)
-   ```
+An AI-powered fraud detection assistant with real-time chart visualizations, built-in Google Sign-In, and a modern dark-themed UI. This project combines Gemini AI with a FastAPI backend and a responsive frontend hosted on GitHub Pages.
 
-3. **Features**  
-   ```markdown
-   - 🧠 AI chat using Gemini API  
-   - 📊 Dynamic bar & line charts  
-   - 🔐 Google Sign-In  
-   - 🌙 Dark mode UI
-   ```
-
-4. **Setup Instructions**  
-   ```markdown
-   ## Setup
-
-   1. Clone repo  
-      ```bash
-      git clone https://github.com/gomit-dev/FraudShield_AI.git
-      ```
-
-   2. Install backend (FastAPI + Gemini API)
-      ```bash
-      pip install -r requirements.txt
-      ```
-
-   3. Add `.env` file:
-      ```
-      GEMINI_API_KEY=your_key_here
-      ```
-
-   4. Run backend:
-      ```bash
-      python main.py
-      ```
-
-   5. Open `index.html` (or use GitHub Pages link)
-   ```
-
-5. **Google Sign-In Setup (Important!)**
-   ```markdown
-   - Go to https://console.cloud.google.com/
-   - Create OAuth 2.0 credentials
-   - Set authorized origins:
-     - `https://gomit-dev.github.io`
-   - Redirect URI:
-     - `https://gomit-dev.github.io/FraudShield_AI`
-   ```
-
-6. **Contact Info (Optional)**
-   ```markdown
-   📧 Email: gomit.dev@gmail.com
-   ```
+🔗 **Live Demo:** [https://gomit-dev.github.io/FraudShield_AI/](https://gomit-dev.github.io/FraudShield_AI/)
 
 ---
+
+## ✨ Features
+
+- 🧠 AI-powered fraud detection assistant using Gemini API
+- 🔐 Google Sign-In for authentication
+- 📊 Dynamic bar and line charts updated based on user input
+- 🌙 Clean, dark-themed UI
+- ⚡ FastAPI backend for AI interaction
+- 🌐 Frontend deployed on GitHub Pages
+
+---
+
+## 📦 Tech Stack
+
+- **Frontend:** HTML, CSS, JavaScript
+- **Backend:** Python, FastAPI
+- **AI Model:** Gemini API (Google)
+- **Authentication:** Google Sign-In (OAuth 2.0)
+- **Deployment:** GitHub Pages (frontend), local/cloud backend (FastAPI)
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/gomit-dev/FraudShield_AI.git
+cd FraudShield_AI
