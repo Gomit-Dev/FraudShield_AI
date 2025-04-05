@@ -2,12 +2,12 @@
    AI-powered fraud detection assistant with interactive visualizations and Google sign-in.
    ```
 
-2. **Live Demo Link**  
+Live Demo Link  
    ```markdown
    🚀 [Live Demo](https://gomit-dev.github.io/FraudShield_AI/)
    ```
 
-3. **Features**  
+**Features**  
    ```markdown
    - 🧠 AI chat using Gemini API  
    - 📊 Dynamic bar & line charts  
@@ -15,7 +15,7 @@
    - 🌙 Dark mode UI
    ```
 
-4. **Setup Instructions**  
+**Setup Instructions**  
    ```markdown
    ## Setup
 
@@ -42,7 +42,7 @@
    5. Open `index.html` (or use GitHub Pages link)
    ```
 
-5. **Google Sign-In Setup (Important!)**
+**Google Sign-In Setup (Important!)**
    ```markdown
    - Go to https://console.cloud.google.com/
    - Create OAuth 2.0 credentials
@@ -52,7 +52,7 @@
      - `https://gomit-dev.github.io/FraudShield_AI`
    ```
 
-6. **Contact Info (Optional)**
+**Contact Info (Optional)**
    ```markdown
    📧 Email: gomit.dev@gmail.com
    ```
