@@ -8,22 +8,22 @@ An AI-powered fraud detection assistant with real-time chart visualizations, bui
 
 ## ✨ Features
 
-- 🧠 AI-powered fraud detection assistant using Gemini API
-- 🔐 Google Sign-In for authentication
-- 📊 Dynamic bar and line charts updated based on user input
-- 🌙 Clean, dark-themed UI
-- ⚡ FastAPI backend for AI interaction
-- 🌐 Frontend deployed on GitHub Pages
+- 🧠 AI-powered fraud detection assistant using Gemini API  
+- 🔐 Google Sign-In for authentication  
+- 📊 Dynamic bar and line charts updated based on user input  
+- 🌙 Clean, dark-themed UI  
+- ⚡ FastAPI backend for AI interaction  
+- 🌐 Frontend deployed on GitHub Pages  
 
 ---
 
 ## 📦 Tech Stack
 
-- **Frontend:** HTML, CSS, JavaScript
-- **Backend:** Python, FastAPI
-- **AI Model:** Gemini API (Google)
-- **Authentication:** Google Sign-In (OAuth 2.0)
-- **Deployment:** GitHub Pages (frontend), local/cloud backend (FastAPI)
+- **Frontend:** HTML, CSS, JavaScript  
+- **Backend:** Python, FastAPI  
+- **AI Model:** Gemini API (Google)  
+- **Authentication:** Google Sign-In (OAuth 2.0)  
+- **Deployment:** GitHub Pages (frontend), local/cloud backend (FastAPI)  
 
 ---
 
@@ -34,9 +34,3 @@ An AI-powered fraud detection assistant with real-time chart visualizations, bui
 ```bash
 git clone https://github.com/gomit-dev/FraudShield_AI.git
 cd FraudShield_AI
-```
-
----
-
-## Screenshots
-![Chat UI](assets/Screenshot 2025-04-05 170821.png)
