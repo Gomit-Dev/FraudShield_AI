@@ -3,12 +3,12 @@
    ```
 
 Live Demo Link  
-   ```markdown
+   
    🚀 [Live Demo](https://gomit-dev.github.io/FraudShield_AI/)
-   ```
+    
 
 **Features**  
-   ```markdown
+   
    - 🧠 AI chat using Gemini API  
    - 📊 Dynamic bar & line charts  
    - 🔐 Google Sign-In  
@@ -17,7 +17,6 @@ Live Demo Link
 
 **Setup Instructions**  
    ```markdown
-   ## Setup
 
    1. Clone repo  
       ```bash
