@@ -223,6 +223,20 @@ Reasons: [Comma-separated list of reasons]`;
                 };
             }
         }
+
+
+
+         // catch (error) {
+         //        // Catch errors from fetch() itself or errors thrown during processing
+         //        console.error("Error in calculateRisk function:", error);
+         //        return {
+         //            risk: 'Error',
+         //            fraudScore: -1,
+         //            // Provide the specific error message caught
+         //            reasons: [error.message || 'Unknown error during API call/processing']
+         //        };
+         //    }
+        
         // ========================================================================
         // END: Refined calculateRisk Function
         // ========================================================================
@@ -382,6 +396,19 @@ Reasons: [Comma-separated list of reasons]`;
              }, 50);
         }
 
+
+
+        //  // --- Sample Data ---
+        // const SAMPLE_BANK_TRANSACTIONS = [
+        //      { amount: 1250.75, time: '2025-04-02 22:15', risk: 'High', score: 72 },
+        //      { amount: 25.50, time: '2025-04-03 08:30', risk: 'Low', score: 5 },
+        //      { amount: 300.00, time: '2025-04-03 03:45', risk: 'Medium', score: 48 },
+        //      { amount: 85.00, time: '2025-04-01 18:05', risk: 'Low', score: 8 },
+        //      { amount: 5.00, time: '2025-04-03 09:00', risk: 'Low', score: 2 }
+        // ];
+
+
+        
         async function handleFileUpload(event) {
              // (Similar error handling refinement should be applied here as in handleUserResponse)
              // ... (Keeping concise for brevity, apply error checking logic from handleUserResponse here) ...
@@ -555,6 +582,21 @@ Reasons: [Comma-separated list of reasons]`;
             return true; // Prevents the default browser error handler
          };
 
+         // --- Optional: Global Error Handler ---
+         // Catches unhandled errors and logs them.
+         // window.onerror = function (message, source, lineno, colno, error) {
+         //    console.error("Unhandled Globa Error:", {
+         //        message: message,
+         //        source: source,
+         //        lineno: lineno,
+         //        colno: colno,
+         //        errorObject: error
+         //    });
+         //    // Optionally display a generic error message to the user
+         //    // const chatBox = document.getElementById("chatBox");
+         //    // if (chatBox) chatBox.innerHTML += `<div class="self-start bg-red-800 text-white p-2 rounded">A critical error occurred. Please check the console (F12).</div>`;
+         //    return true; // Prevents the default browser error handler
+         // };
 
     </script>
     <style>
