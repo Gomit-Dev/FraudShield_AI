@@ -1,748 +1,431 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FraudGuardAI - Real-Time Insights (v3)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script>
-        // --- Configuration (Original Rules - Kept for reference) ---
-        // const HIGH_AMOUNT_THRESHOLD = 1000; ... etc ...
-
-        // --- Global State Variables ---
-        const DEFAULT_FRAUD_CASES = [5, 10, 3, 7, 6];
-        const DEFAULT_TRANSACTION_STATS = { legit: 80, fraudulent: 20 };
-        const DEFAULT_RECENT_TRANSACTIONS = [];
-        const DEFAULT_SESSION_RISK_COUNTS = { Low: 0, Medium: 0, High: 0 };
-
-        let fraudCases = [...DEFAULT_FRAUD_CASES];
-        let transactionStats = {...DEFAULT_TRANSACTION_STATS};
-        let recentTransactions = [...DEFAULT_RECENT_TRANSACTIONS];
-        let sessionRiskCounts = {...DEFAULT_SESSION_RISK_COUNTS};
-
-        let isLoggedIn = false;
-        let currentUser = null;
-
-        // --- Sample Data ---
-        const SAMPLE_BANK_TRANSACTIONS = [
-             { amount: 1250.75, location: 'Online Retailer', time: '2025-04-02 22:15', risk: 'High', score: 72 },
-             { amount: 25.50, location: 'Coffee Shop', time: '2025-04-03 08:30', risk: 'Low', score: 5 },
-             { amount: 300.00, location: 'Unknown', time: '2025-04-03 03:45', risk: 'Medium', score: 48 },
-             { amount: 85.00, location: 'Grocery Store', time: '2025-04-01 18:05', risk: 'Low', score: 8 },
-             { amount: 5.00, location: 'Parking Meter', time: '2025-04-03 09:00', risk: 'Low', score: 2 }
-        ];
-
-        // --- localStorage Helper Functions ---
-        function getUserData(username, key, defaultValue) { if (!username) return defaultValue; try { const d = localStorage.getItem(`data_${username}_${key}`); return d ? JSON.parse(d) : defaultValue; } catch (e) { console.error(`LocalStorage Parse Error (${key}):`, e); return defaultValue; } }
-        function setUserData(username, key, value) { if (!username) return; try { localStorage.setItem(`data_${username}_${key}`, JSON.stringify(value)); } catch (e) { console.error(`LocalStorage Save Error (${key}):`, e); } }
-
-
-        // ========================================================================
-        // START: Refined calculateRisk Function (API Call - STILL INSECURE)
-        // ========================================================================
-        // --- Risk Calculation (UPDATED to use Direct API Call - INSECURE) ---
-        // !!! CRITICAL WARNING: API Key exposed in frontend code! HIGHLY INSECURE! !!!
-        // !!! This key IS VISIBLE publicly. DO NOT use this in any real application. !!!
-        // !!! Use a backend proxy for ALL API calls involving secret keys.          !!!
-        const YOUR_SECRET_API_KEY = "AIzaSyDOYK_GjkjYJI9qsXIgYikTJP39h-oIeWY"; // <--- INSECURE! Replace ONLY for temporary, non-public demos.
-
-        // Using Gemini 1.0 Pro endpoint. Key is INSECURELY appended.
-        const RISK_API_ENDPOINT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=" + YOUR_SECRET_API_KEY;
-
-        /**
-         * Calculates risk by calling the Google Generative Language API directly (INSECURELY).
-         * Refined parsing and error handling, but core security/reliability issues remain.
-         * @param {object} transactionDetails - { amount, location, time }
-         * @returns {Promise<{risk: string, fraudScore: number, reasons: string[]}>}
-         */
-        async function calculateRisk(transactionDetails) {
-            console.warn("INSECURE METHOD: Calling external API directly from frontend with exposed API key.", transactionDetails);
-
-            // --- Validate API Key Presence (More Robust Check) ---
-            // Check if the key is missing, empty, or still the exact placeholder value.
-            const placeholderKey = "AIzaSyDOYK_GjkjYJI9qsXIgYikTJP39h-oIeWY"; // Define placeholder explicitly
-            if (!YOUR_SECRET_API_KEY || YOUR_SECRET_API_KEY.trim() === "" || YOUR_SECRET_API_KEY === placeholderKey) {
-                const errorMsg = "API Key is missing, empty, or still the placeholder value in the code.";
-                console.error(errorMsg);
-                // Return a specific error state identifiable by the calling function
-                return { risk: 'Config Error', fraudScore: -1, reasons: [errorMsg] };
-            }
-            // --- End Key Check ---
-
-             // --- Construct the prompt for the Generative Model ---
-             // Asking for specific format increases chances of successful parsing, but isn't guaranteed.
-            const prompt = `Analyze the following transaction for fraud risk.
-Transaction Details:
-- Amount: $${transactionDetails.amount}
-- Location: ${transactionDetails.location}
-- Time: ${transactionDetails.time}
-
-Based ONLY on these details, assess the fraud risk level (Low, Medium, or High) and provide a numerical risk score between 0 and 100.
-Also, briefly list the key reasons for your assessment based on common fraud indicators (e.g., amount, location type, time of day).
-
-Please format your response ONLY as:
-Risk: [Low/Medium/High]
-Score: [0-100]
-Reasons: [Comma-separated list of reasons]`;
-
-            console.log("Sending prompt to Generative API:", prompt);
-
-            try {
-                console.log("Attempting API call to:", RISK_API_ENDPOINT_URL.split('?')[0] + "?key=..."); // Log endpoint without key
-                const response = await fetch(RISK_API_ENDPOINT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        "contents": [{"parts": [{"text": prompt }]}],
-                        // Consider adding generationConfig for more control if needed
-                        // "generationConfig": { "temperature": 0.4, "maxOutputTokens": 150 }
-                    })
-                });
-
-                console.log("API Response Status:", response.status);
-
-                // Check if the API call was successful (status code 2xx)
-                if (!response.ok) {
-                    let errorBody = `Status ${response.status} ${response.statusText}. No error body available.`; // Default error
-                    try {
-                       errorBody = await response.text(); // Attempt to get detailed error
-                       console.error("API Error Body:", errorBody);
-                    } catch (parseError) {
-                       console.error("Failed to parse error response body:", parseError);
-                    }
-                    // Common Causes for Errors:
-                    // 400: Bad Request (check prompt, request body format)
-                    // 401/403: Authentication/Permission Error (Invalid/restricted API key, API not enabled)
-                    // 429: Quota Exceeded
-                    // 5xx: Server Error on Google's side
-                    throw new Error(`API call failed. ${errorBody}`); // Throw detailed error
-                }
-
-                // Get the JSON result from the API response
-                const responseData = await response.json();
-                console.log("Received raw API response data:", responseData);
-
-                // ---- Process the result ----
-                // Extract the generated text (more robust access)
-                let generatedText = "";
-                try {
-                    generatedText = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (typeof generatedText !== 'string' || generatedText.trim() === "") {
-                         // Handle cases where text is missing or not a string
-                        throw new Error("Generated text not found or invalid in API response structure.");
-                    }
-                    generatedText = generatedText.trim(); // Trim whitespace
-                    console.log("Extracted generated text:", generatedText);
-                } catch (e) {
-                    console.error("Error extracting text from API response:", e, responseData);
-                    throw new Error(`Could not parse generated text from API response. Check console for raw data. Error: ${e.message}`);
-                }
-
-                // --- Refined Parsing of Generated Text (Still Fragile!) ---
-                // Uses regex, more tolerant of whitespace, case-insensitive labels.
-                let riskLevel = 'Error';
-                let riskScore = -1;
-                let reasons = []; // Start with empty reasons, add parsing errors if they occur
-                let parsedSuccessfully = { risk: false, score: false, reasons: false }; // Track parsing success
-
-                // Regex: ^ asserts start of line, \s* allows whitespace, i flag for case-insensitive label
-                const riskMatch = generatedText.match(/^Risk\s*:\s*(Low|Medium|High)/im);
-                const scoreMatch = generatedText.match(/^Score\s*:\s*(\d+)/im);
-                const reasonsMatch = generatedText.match(/^Reasons\s*:\s*(.*)/im);
-
-                if (riskMatch && riskMatch[1]) {
-                    const level = riskMatch[1].toLowerCase();
-                    riskLevel = level.charAt(0).toUpperCase() + level.slice(1);
-                    parsedSuccessfully.risk = true;
-                } else {
-                     console.warn("Could not parse 'Risk:' line from text.");
-                     reasons.push("Risk level missing/malformed in AI response");
-                }
-
-                if (scoreMatch && scoreMatch[1]) {
-                    riskScore = parseInt(scoreMatch[1], 10);
-                    if (isNaN(riskScore) || riskScore < 0 || riskScore > 100) {
-                        console.warn("Parsed score is invalid or out of range:", scoreMatch[1]);
-                        reasons.push(`Invalid score (${scoreMatch[1]}) in AI response`);
-                        riskScore = -1; // Reset
-                    } else {
-                         parsedSuccessfully.score = true;
-                    }
-                } else {
-                     console.warn("Could not parse 'Score:' line from text.");
-                     reasons.push("Risk score missing/malformed in AI response");
-                }
-
-                if (reasonsMatch && reasonsMatch[1]) {
-                    const parsedReasons = reasonsMatch[1].split(',')
-                                             .map(r => r.trim())
-                                             .filter(r => r.length > 0);
-                    if (parsedReasons.length > 0) {
-                       reasons = reasons.concat(parsedReasons); // Add successfully parsed reasons
-                       parsedSuccessfully.reasons = true;
-                    } else {
-                        console.warn("Parsed 'Reasons:' line but found no valid reasons after splitting.");
-                        reasons.push("Reasons unclear/empty in AI response");
-                    }
-                } else {
-                    console.warn("Could not parse 'Reasons:' line from text.");
-                    reasons.push("Reasons list missing/malformed in AI response");
-                }
-
-                // If no core information could be parsed, ensure the state reflects an error
-                if (!parsedSuccessfully.risk || !parsedSuccessfully.score) {
-                    riskLevel = 'Error'; // Force error state if essential parts failed
-                }
-                 // If reasons array is still empty after attempting parse, add a generic note
-                if (reasons.length === 0) {
-                    reasons.push("Could not determine reasons from AI response.");
-                }
-
-                // ---- End Refined Parsing ----
-
-                const finalResult = {
-                    risk: riskLevel,
-                    fraudScore: riskScore,
-                    reasons: reasons
-                };
-                console.log("Final Parsed result:", finalResult);
-                return finalResult;
-
-            } catch (error) {
-                // Catch errors from fetch() itself or errors thrown during processing
-                console.error("Error in calculateRisk function:", error);
-                return {
-                    risk: 'Error',
-                    fraudScore: -1,
-                    // Provide the specific error message caught
-                    reasons: [error.message || 'Unknown error during API call/processing']
-                };
-            }
-        }
-
-
-
-         // catch (error) {
-         //        // Catch errors from fetch() itself or errors thrown during processing
-         //        console.error("Error in calculateRisk function:", error);
-         //        return {
-         //            risk: 'Error',
-         //            fraudScore: -1,
-         //            // Provide the specific error message caught
-         //            reasons: [error.message || 'Unknown error during API call/processing']
-         //        };
-         //    }
-        
-        // ========================================================================
-        // END: Refined calculateRisk Function
-        // ========================================================================
-
-
-        // --- UI Updates (Graph, Pie, Siren, Transactions, Counters) ---
-        // (No changes needed in these functions for this update)
-        function updateGraph() {
-             const container = document.getElementById("graphContainer"); if (!container) return; container.innerHTML = `<canvas id="lineChart"></canvas>`; const ctx = document.getElementById("lineChart").getContext("2d"); new Chart(ctx, { type: "line", data: { labels: ["Jan", "Feb", "Mar", "Apr", "May"], datasets: [{ label: "Fraud Cases (High Risk)", data: fraudCases, borderColor: "#F87171", backgroundColor: "rgba(248, 113, 113, 0.1)", fill: true, tension: 0.1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'white' } } }, scales: { x: { ticks: { color: 'white' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }, y: { ticks: { color: 'white' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, beginAtZero: true } } } });
-        }
-        function updatePieChart() {
-             const container = document.getElementById("pieContainer"); if (!container) return; container.innerHTML = `<canvas id="pieChart"></canvas>`; const ctx = document.getElementById("pieChart").getContext("2d"); new Chart(ctx, { type: "pie", data: { labels: ["Legit Transactions", "Fraudulent Transactions"], datasets: [{ data: [transactionStats.legit, transactionStats.fraudulent], backgroundColor: ["#34D399", "#F87171"], borderColor: '#374151', borderWidth: 1, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: 'white', boxWidth: 12, padding: 15 } }, tooltip: { bodyFont: { size: 14 } } } } });
-        }
-        function triggerSiren(isHighRisk) {
-             if (!isHighRisk) return; const s=document.getElementById("siren"); if (!s) return; const a=document.getElementById("sirenSound"); if (!a) return; s.classList.remove("bg-gray-600"); s.classList.add("bg-red-600", "animate-pulse"); a.currentTime = 0; a.play().then(() => { setTimeout(() => { s.classList.remove("bg-red-600", "animate-pulse"); s.classList.add("bg-gray-600"); a.pause(); }, 3000); }).catch(e => { console.error("Error playing siren:", e); s.classList.remove("bg-red-600", "animate-pulse"); s.classList.add("bg-gray-600"); });
-        }
-        function updateRecentTransactions() {
-            const list = document.getElementById("recentTransactions"); if (!list) return; list.innerHTML = "";
-            if (recentTransactions.length === 0) { list.innerHTML = `<li class="placeholder-text p-2">No recent transactions</li>`; return; } // Use placeholder class
-            recentTransactions.slice(0, 10).forEach(tx => {
-                let riskClass = "text-green-400";
-                if (tx.risk === "High") riskClass = "text-red-400";
-                else if (tx.risk === "Medium") riskClass = "text-yellow-400";
-                else if (tx.risk === "Error" || tx.risk === "Config Error") riskClass = "text-orange-400 font-bold"; // Emphasize errors
-
-                let reasonsHtml = '';
-                if (Array.isArray(tx.reasons) && tx.reasons.length > 0) {
-                     const reasonsText = tx.reasons.map(r => r.replace(/</g, "&lt;").replace(/>/g, "&gt;")).join(', ');
-                     reasonsHtml = `<span class="text-gray-500 text-[10px] block mt-1">Details: ${reasonsText}</span>`; // Changed label to Details
-                }
-
-                const amountText = `$${tx.amount?.toString().replace(/</g, "&lt;") ?? 'N/A'}`;
-                const locationText = tx.location?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                const timeText = tx.time?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                const riskText = tx.risk?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                const scoreText = (tx.score === -1 || tx.score === null || tx.score === undefined) ? 'N/A' : tx.score.toString().replace(/</g, "&lt;"); // Handle -1 score display
-                const analyzedText = tx.timestamp?.toString().replace(/</g, "&lt;") ?? 'N/A';
-
-                list.innerHTML += `
-                    <li class="p-2 border-b border-slate-700 text-xs hover:bg-slate-700/50 transition-colors duration-150 cursor-default" title="Score: ${scoreText}">
-                        Amount: ${amountText}, Loc: ${locationText}, Time: ${timeText}
-                        <span class="${riskClass} ml-2 font-semibold">[Status: ${riskText}]</span> <span class="text-gray-500 block">Analyzed: ${analyzedText}</span>
-                        ${reasonsHtml}
-                    </li>`;
-            });
-        }
-        function showDangerBox() {
-             const d=document.getElementById("dangerBox"); if (!d) return; d.classList.remove("hidden"); setTimeout(() => { d.classList.add("hidden"); }, 5000);
-        }
-        function updateRiskCountersUI() {
-            const lowCountEl = document.getElementById('sessionLowCount');
-            const medCountEl = document.getElementById('sessionMedCount');
-            const highCountEl = document.getElementById('sessionHighCount');
-            if (lowCountEl) lowCountEl.textContent = sessionRiskCounts.Low;
-            if (medCountEl) medCountEl.textContent = sessionRiskCounts.Medium;
-            if (highCountEl) highCountEl.textContent = sessionRiskCounts.High;
-        }
-
-        let awaitingDetails = false;
-        let transactionDetails = {};
-
-        // --- Chat and File Handling ---
-        // Updated to provide clearer feedback on errors
-        async function handleUserResponse(userInput) {
-            const chatBox = document.getElementById("chatBox");
-            if (!chatBox || !userInput.trim() || !currentUser) return;
-            const username = currentUser.username;
-
-            const sanitizedInput = userInput.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            chatBox.innerHTML += `<div class="self-end bg-blue-500 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow">You: ${sanitizedInput}</div>`;
-            document.getElementById("userInput").value = ""; chatBox.scrollTop = chatBox.scrollHeight;
-
-             setTimeout(async () => { // Make the timeout callback async to use await inside
-                 const lowerInput = userInput.toLowerCase(); let botMessage = "";
-                 if (awaitingDetails) {
-                      if (!transactionDetails.amount) { const amount = parseFloat(userInput); if (!isNaN(amount) && amount > 0) { transactionDetails.amount = amount; botMessage = "Bot: Please provide the location (e.g., 'New York', 'Online Store')."; } else { botMessage = "Bot: Invalid amount. Please enter a positive number."; } }
-                      else if (!transactionDetails.location) { transactionDetails.location = userInput.trim() || "Unknown"; botMessage = "Bot: Please provide the date/time (e.g., `YYYY-MM-DD HH:mm` or 'N/A' for now)."; }
-                      else if (!transactionDetails.time) {
-                          let timeInput = userInput.trim();
-                          transactionDetails.time = (timeInput.toUpperCase() === 'N/A' || timeInput === '') ? moment().format('YYYY-MM-DD HH:mm') : timeInput;
-
-                          const loadingId = `loading-${Date.now()}`;
-                          chatBox.innerHTML += `<div id="${loadingId}" class="self-start bg-slate-500 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow animate-pulse">Bot: Contacting Fraud Analysis Service...</div>`;
-                          chatBox.scrollTop = chatBox.scrollHeight;
-
-                          // *** Call calculateRisk and handle result ***
-                          const result = await calculateRisk(transactionDetails); // Use await here
-
-                          const loadingEl = document.getElementById(loadingId);
-                          if (loadingEl) loadingEl.remove();
-
-                          const riskLevel = result.risk; // Includes 'Error' or 'Config Error' types now
-                          const riskScore = result.fraudScore;
-                          const reasons = result.reasons || [];
-
-                          let reasonText = ` Analysis details: ${reasons.map(r => r.replace(/</g, "&lt;").replace(/>/g, "&gt;")).join(', ')}.`;
-
-                          const displayAmount = transactionDetails.amount?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                          const displayLocation = transactionDetails.location?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                          const displayTime = transactionDetails.time?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                          const displayRisk = riskLevel?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                          const displayScore = (riskScore === -1 || riskScore === null || riskScore === undefined) ? 'N/A' : riskScore.toString().replace(/</g, "&lt;");
-
-                          // Display transaction details first
-                           chatBox.innerHTML += `<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow">Bot: Analyzing Transaction - Amount: $${displayAmount}, Location: ${displayLocation}, Time: ${displayTime}</div>`;
-
-                          // Display result or specific error message
-                          if (riskLevel === 'Config Error') {
-                               chatBox.innerHTML += `<div class="self-start bg-red-700 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow mt-1"><strong>Bot Configuration Error:</strong> ${reasonText} Please check the code.</div>`;
-                          } else if (riskLevel === 'Error') {
-                               chatBox.innerHTML += `<div class="self-start bg-red-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow mt-1"><strong>Bot Analysis Error:</strong> ${reasonText} Check browser console (F12) for details.</div>`;
-                          } else {
-                               // Successful analysis (Low, Medium, High)
-                               chatBox.innerHTML += `<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words mt-1 shadow">Bot: Fraud Risk Assessment: ${displayRisk} (Score: ${displayScore}).${reasonText}</div>`;
-                          }
-                          chatBox.scrollTop = chatBox.scrollHeight;
-
-                          // Update stats and UI only if analysis was successful (not Error/Config Error)
-                          if (riskLevel !== 'Error' && riskLevel !== 'Config Error') {
-                            const isHighRisk = riskLevel === "High";
-                            const currentTimestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-
-                            if (isHighRisk) { fraudCases[fraudCases.length - 1] += 1; transactionStats.fraudulent += 1; sessionRiskCounts.High++; }
-                            else if (riskLevel === "Medium") { transactionStats.legit += 1; sessionRiskCounts.Medium++; }
-                            else { transactionStats.legit += 1; sessionRiskCounts.Low++; } // Low risk
-                            updateRiskCountersUI();
-
-                            recentTransactions.unshift({ ...transactionDetails, risk: riskLevel, score: riskScore, timestamp: currentTimestamp, reasons: reasons });
-                            if (recentTransactions.length > 50) recentTransactions.pop();
-
-                            setUserData(username, 'fraudCases', fraudCases); setUserData(username, 'transactionStats', transactionStats); setUserData(username, 'recentTransactions', recentTransactions);
-
-                            updateRecentTransactions(); updateGraph(); updatePieChart();
-                            if (isHighRisk) { triggerSiren(true); showDangerBox(); }
-
-                          } else {
-                              // Optionally add error entry to recent transactions for tracking attempts
-                               const currentTimestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-                               recentTransactions.unshift({ ...transactionDetails, risk: riskLevel, score: riskScore, timestamp: currentTimestamp, reasons: reasons });
-                               if (recentTransactions.length > 50) recentTransactions.pop();
-                               setUserData(username, 'recentTransactions', recentTransactions); // Save even errors
-                               updateRecentTransactions(); // Update list to show the error entry
-                          }
-
-                          awaitingDetails = false; transactionDetails = {};
-                          return; // Stop further processing in this branch
-                      }
-                 } else { /* ... initial chat prompts ... */
-                      if (lowerInput === "yes" || lowerInput.includes("check fraud")) { botMessage = "Bot: How do you want to check? ('details', 'csv', or 'simulate bank connect')"; }
-                      else if (lowerInput.includes("details")) { awaitingDetails = true; transactionDetails = {}; botMessage = "Bot: Please provide the amount (e.g., 123.45)."; }
-                      else if (lowerInput.includes("csv")) { botMessage = "Bot: Please use the 'Upload CSV' button."; }
-                      else if (lowerInput.includes("bank") || lowerInput.includes("connect")) { botMessage = "Bot: Please use the 'Simulate Bank Connect' button."; }
-                      else { botMessage = `Bot: Hi ${username}! How can I help? ('details', 'csv', 'simulate bank connect')`; }
-                 }
-                 // Display initial bot prompts
-                 if (botMessage) { chatBox.innerHTML += `<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow">${botMessage}</div>`; chatBox.scrollTop = chatBox.scrollHeight; }
-             }, 50);
-        }
-
-
-
-        //  // --- Sample Data ---
-        // const SAMPLE_BANK_TRANSACTIONS = [
-        //      { amount: 1250.75, time: '2025-04-02 22:15', risk: 'High', score: 72 },
-        //      { amount: 25.50, time: '2025-04-03 08:30', risk: 'Low', score: 5 },
-        //      { amount: 300.00, time: '2025-04-03 03:45', risk: 'Medium', score: 48 },
-        //      { amount: 85.00, time: '2025-04-01 18:05', risk: 'Low', score: 8 },
-        //      { amount: 5.00, time: '2025-04-03 09:00', risk: 'Low', score: 2 }
-        // ];
-
-
-        
-        async function handleFileUpload(event) {
-             // (Similar error handling refinement should be applied here as in handleUserResponse)
-             // ... (Keeping concise for brevity, apply error checking logic from handleUserResponse here) ...
-             const file = event.target.files[0]; const chatBox = document.getElementById("chatBox"); if (!file || !chatBox || !currentUser) return; const username = currentUser.username;
-             chatBox.innerHTML += `<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg shadow">Bot: Processing ${file.name}...</div>`; chatBox.scrollTop = chatBox.scrollHeight;
-             const reader = new FileReader();
-             reader.onload = async function(e) {
-                 try {
-                     const text = e.target.result; const transactionsFromCSV = parseCSV(text);
-                     if (transactionsFromCSV.length > 0) {
-                         const transaction = transactionsFromCSV[0]; // Process first transaction
-                         const displayAmount = transaction.amount?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                         const displayLocation = transaction.location?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                         const displayTime = transaction.time?.toString().replace(/</g, "&lt;") ?? 'N/A';
-
-                         chatBox.innerHTML += `<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg shadow">Bot: Processing CSV Transaction - Amount: $${displayAmount}, Location: ${displayLocation}, Time: ${displayTime}</div>`;
-                         const loadingId = `loading-csv-${Date.now()}`;
-                         chatBox.innerHTML += `<div id="${loadingId}" class="self-start bg-slate-500 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow animate-pulse">Bot: Contacting Fraud Analysis Service...</div>`;
-                         chatBox.scrollTop = chatBox.scrollHeight;
-
-                         // Call calculateRisk
-                         const result = await calculateRisk(transaction); // Use await
-
-                         const loadingEl = document.getElementById(loadingId);
-                         if (loadingEl) loadingEl.remove();
-
-                         const riskLevel = result.risk;
-                         const riskScore = result.fraudScore;
-                         const reasons = result.reasons || [];
-                         let reasonText = ` Analysis details: ${reasons.map(r => r.replace(/</g, "&lt;").replace(/>/g, "&gt;")).join(', ')}.`;
-                         const displayRisk = riskLevel?.toString().replace(/</g, "&lt;") ?? 'N/A';
-                         const displayScore = (riskScore === -1 || riskScore === null || riskScore === undefined) ? 'N/A' : riskScore.toString().replace(/</g, "&lt;");
-
-                         // Display result or specific error message
-                         if (riskLevel === 'Config Error') {
-                              chatBox.innerHTML += `<div class="self-start bg-red-700 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow mt-1"><strong>Bot Configuration Error:</strong> ${reasonText} Please check the code.</div>`;
-                         } else if (riskLevel === 'Error') {
-                              chatBox.innerHTML += `<div class="self-start bg-red-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow mt-1"><strong>Bot Analysis Error:</strong> ${reasonText} Check browser console (F12) for details.</div>`;
-                         } else {
-                              chatBox.innerHTML += `<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words mt-1 shadow">Bot: Fraud Risk Assessment: ${displayRisk} (Score: ${displayScore}).${reasonText}</div>`;
-                         }
-                         chatBox.scrollTop = chatBox.scrollHeight;
-
-
-                         // Update stats and UI only if analysis was successful
-                         if (riskLevel !== 'Error' && riskLevel !== 'Config Error') {
-                             const isHighRisk = riskLevel === "High";
-                             const currentTimestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-                             if (isHighRisk) { fraudCases[fraudCases.length - 1] += 1; transactionStats.fraudulent += 1; sessionRiskCounts.High++; }
-                             else if (riskLevel === "Medium") { transactionStats.legit += 1; sessionRiskCounts.Medium++; }
-                             else { transactionStats.legit += 1; sessionRiskCounts.Low++; }
-                             updateRiskCountersUI();
-
-                             recentTransactions.unshift({ ...transaction, risk: riskLevel, score: riskScore, timestamp: currentTimestamp, reasons: reasons });
-                             if (recentTransactions.length > 50) recentTransactions.pop();
-                             setUserData(username, 'fraudCases', fraudCases); setUserData(username, 'transactionStats', transactionStats); setUserData(username, 'recentTransactions', recentTransactions);
-                             updateGraph(); updatePieChart(); updateRecentTransactions();
-                             if (isHighRisk) { triggerSiren(true); showDangerBox(); }
-                         } else {
-                             // Add error entry to recent transactions
-                             const currentTimestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-                             recentTransactions.unshift({ ...transaction, risk: riskLevel, score: riskScore, timestamp: currentTimestamp, reasons: reasons });
-                             if (recentTransactions.length > 50) recentTransactions.pop();
-                             setUserData(username, 'recentTransactions', recentTransactions);
-                             updateRecentTransactions();
-                         }
-                     } else { chatBox.innerHTML += `<div class="self-start bg-yellow-200 text-black px-3 py-1 rounded-lg shadow">Bot: No valid transactions found in CSV or format incorrect (Expected: Amount,Location,Time).</div>`; }
-                 } catch (error) { console.error("Error processing CSV:", error); chatBox.innerHTML += `<div class="self-start bg-red-200 text-black px-3 py-1 rounded-lg shadow">Bot: Error processing CSV file. Error: ${error.message.replace(/</g, "&lt;")}</div>`; }
-                 finally { chatBox.scrollTop = chatBox.scrollHeight; event.target.value = null; }
-             };
-             reader.onerror = function() { chatBox.innerHTML += `<div class="self-start bg-red-200 text-black px-3 py-1 rounded-lg shadow">Bot: Could not read the file.</div>`; chatBox.scrollTop = chatBox.scrollHeight; event.target.value = null; }
-             reader.readAsText(file);
-        }
-        function parseCSV(csvText) {
-             // (Parser unchanged, ensure it handles edge cases if needed)
-             const lines = csvText.trim().split(/\r?\n/); if (lines.length < 2) return [];
-             const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-             const idxAmount = headers.indexOf('amount');
-             const idxLocation = headers.indexOf('location');
-             const idxTime = headers.indexOf('time');
-             if (idxAmount === -1 || idxLocation === -1 || idxTime === -1) { console.warn("CSV headers missing/incorrect. Expected 'Amount', 'Location', 'Time'. Found:", headers); return []; }
-             const transactions = [];
-             for (let i = 1; i < lines.length; i++) {
-                 const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ''));
-                 if (values.length > Math.max(idxAmount, idxLocation, idxTime)) {
-                     const amount = parseFloat(values[idxAmount]);
-                     if (!isNaN(amount) && amount >= 0) {
-                         transactions.push({ amount: amount, location: values[idxLocation] || "Unknown", time: values[idxTime] || moment().format('YYYY-MM-DD HH:mm') });
-                     } else { console.warn(`Skipping CSV row ${i + 1}: Invalid amount '${values[idxAmount]}'`); }
-                 } else { console.warn(`Skipping CSV row ${i + 1}: Incorrect column count.`); }
-             }
-             return transactions;
-        }
-         function handleSimulatedBankConnect() {
-             // (Simulation logic unchanged)
-             if (!isLoggedIn || !currentUser) { alert("Please sign in to simulate bank connection."); showSignInForm(); return; } const username = currentUser.username; const chatBox = document.getElementById("chatBox"); if (!chatBox) return; chatBox.innerHTML += `<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow">Bot: Simulating secure bank connection... (Using sample data)</div>`; chatBox.scrollTop = chatBox.scrollHeight; setTimeout(() => { const newlyAddedTransactions = []; SAMPLE_BANK_TRANSACTIONS.forEach(sampleTx => { const newTx = { ...sampleTx, risk: sampleTx.risk ?? 'N/A', score: sampleTx.score ?? -1, timestamp: moment().format('YYYY-MM-DD HH:mm:ss'), reasons: sampleTx.reasons ?? ['Simulated Data'] }; recentTransactions.unshift(newTx); newlyAddedTransactions.push(newTx); }); if (recentTransactions.length > 50) { recentTransactions = recentTransactions.slice(0, 50); } setUserData(username, 'recentTransactions', recentTransactions); updateRecentTransactions(); chatBox.innerHTML += `<div class="self-start bg-green-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow">Bot: ${newlyAddedTransactions.length} sample transactions loaded successfully. View them in 'Recent Transactions'.</div>`; chatBox.scrollTop = chatBox.scrollHeight; }, 1500);
-         }
-
-        // Helper function to trigger file input click
-        function triggerFileUpload() {
-            if (!isLoggedIn || !currentUser) { alert("Please sign in to upload a file."); showSignInForm(); return; }
-            document.getElementById('csvFileInput').click();
-        }
-
-
-        // --- Login/Logout & UI State Functions ---
-        // (Login/Logout logic unchanged - still uses insecure plaintext password storage)
-        function handleSignIn(event) {
-            event.preventDefault(); const u=document.getElementById("username"),p=document.getElementById("password"),e=document.getElementById("signInError"); if(!u||!p||!e)return; const n=u.value.trim(),a=p.value.trim(); e.textContent=""; if(!n||!a){e.textContent="Please enter both username and password.";return;}
-            const t=localStorage.getItem(`credentials_${n}`); // INSECURE STORAGE
-            if(t&&t===a){ // INSECURE COMPARISON
-                isLoggedIn=true; currentUser={username:n};
-                fraudCases=getUserData(n,'fraudCases',[...DEFAULT_FRAUD_CASES]);
-                transactionStats=getUserData(n,'transactionStats',{...DEFAULT_TRANSACTION_STATS});
-                recentTransactions=getUserData(n,'recentTransactions',[...DEFAULT_RECENT_TRANSACTIONS]);
-                sessionRiskCounts = {...DEFAULT_SESSION_RISK_COUNTS};
-                updateRiskCountersUI();
-                showMainContent(); updateHeader(); u.value=""; p.value="";
-            } else { e.textContent="Invalid username or password."; p.value=""; }
-        }
-        function handleSignOut() {
-            isLoggedIn=false; currentUser=null;
-            fraudCases=[...DEFAULT_FRAUD_CASES]; transactionStats={...DEFAULT_TRANSACTION_STATS}; recentTransactions=[...DEFAULT_RECENT_TRANSACTIONS];
-            sessionRiskCounts = {...DEFAULT_SESSION_RISK_COUNTS};
-            updateHeader(); showSignInForm();
-            const g=document.getElementById("graphContainer"),c=document.getElementById("pieContainer"),r=document.getElementById("recentTransactions"),b=document.getElementById("chatBox"), counters=document.getElementById("riskCounters");
-            if(g)g.innerHTML='<span class="placeholder-text">Graph will load here</span>'; // Use placeholder class
-            if(c)c.innerHTML='<span class="placeholder-text">Pie chart will load here</span>'; // Use placeholder class
-            if(r)r.innerHTML='<li class="placeholder-text p-2">No recent transactions</li>'; // Use placeholder class
-            if(b)b.innerHTML="";
-            if(counters) updateRiskCountersUI();
-        }
-        function showSignInForm(){const s=document.getElementById("signInForm"),m=document.getElementById("mainContent"),c=document.getElementById("createAccountForm");if(s&&m&&c){s.classList.remove("hidden");m.classList.add("hidden");c.classList.add("hidden");const e=document.getElementById("signInError");if(e)e.textContent=""}}
-        function showMainContent(){const s=document.getElementById("signInForm"),m=document.getElementById("mainContent"),c=document.getElementById("createAccountForm");if(s&&m&&c){s.classList.add("hidden");m.classList.remove("hidden");c.classList.add("hidden");updateGraph();updatePieChart();updateRecentTransactions();updateRiskCountersUI();resetChat()}}
-        function resetChat(){const c=document.getElementById("chatBox");if(c&&currentUser)c.innerHTML=`<div class="self-start bg-slate-600 text-white px-3 py-1 rounded-lg max-w-[80%] break-words shadow">Bot: Hi ${currentUser.username}! How can I help? ('details', 'csv', 'simulate bank connect')</div>`;awaitingDetails=false;transactionDetails={}}
-        function showCreateAccountForm(){const s=document.getElementById("signInForm"),m=document.getElementById("mainContent"),c=document.getElementById("createAccountForm");if(s&&m&&c){s.classList.add("hidden");m.classList.add("hidden");c.classList.remove("hidden");const e=document.getElementById("createAccountError");if(e)e.textContent=""}}
-        function handleCreateAccount(event){event.preventDefault();const u=document.getElementById("newUsername"),p=document.getElementById("newPassword"),f=document.getElementById("confirmPassword"),e=document.getElementById("createAccountError");if(!u||!p||!f||!e)return;const n=u.value.trim(),a=p.value.trim(),o=f.value.trim();e.textContent="";if(!n||!a||!o){e.textContent="Please fill in all fields.";return}if(a!==o){e.textContent="Passwords do not match.";return}if(n.length<3){e.textContent="Username must be at least 3 characters long.";return}if(a.length<6){e.textContent="Password must be at least 6 characters long.";return}if(localStorage.getItem(`credentials_${n}`)){e.textContent="Username already exists.";return}
-        localStorage.setItem(`credentials_${n}`,a); // INSECURE STORAGE
-        console.warn(`INSECURE: New Account Credential Stored Plaintext: Username: ${n}`);u.value="";p.value="";f.value="";alert("Account created successfully! Please sign in.");showSignInForm()}
-        function updateHeader(){const s=document.getElementById("headerSignInContainer"),u=document.getElementById("headerUserContainer"),d=document.getElementById("userDisplay");if(!s||!u||!d)return;if(isLoggedIn&&currentUser){s.classList.add("hidden");u.classList.remove("hidden");d.textContent=`Welcome, ${currentUser.username}!`}else{s.classList.remove("hidden");u.classList.add("hidden");d.textContent=""}}
-        function handleChatToBotClick(){if(isLoggedIn){showMainContent();const u=document.getElementById("userInput");if(u)u.focus()}else{alert("Please sign in to use the chat bot.");showSignInForm()}}
-
-
-        // --- Initial Load ---
-         window.addEventListener('DOMContentLoaded', () => {
-             const u=document.getElementById("userInput");
-             if(u){
-                 u.addEventListener('keypress',function(e){
-                     if(e.key==='Enter'){
-                         e.preventDefault();
-                         handleUserResponse(u.value);
-                     }
-                 });
-             }
-             handleSignOut(); // Start logged out
-         });
-
-         // --- Optional: Global Error Handler ---
-         // Catches unhandled errors and logs them.
-         window.onerror = function (message, source, lineno, colno, error) {
-            console.error("Unhandled Globa Error:", {
-                message: message,
-                source: source,
-                lineno: lineno,
-                colno: colno,
-                errorObject: error
-            });
-            // Optionally display a generic error message to the user
-            // const chatBox = document.getElementById("chatBox");
-            // if (chatBox) chatBox.innerHTML += `<div class="self-start bg-red-800 text-white p-2 rounded">A critical error occurred. Please check the console (F12).</div>`;
-            return true; // Prevents the default browser error handler
-         };
-
-         // --- Optional: Global Error Handler ---
-         // Catches unhandled errors and logs them.
-         // window.onerror = function (message, source, lineno, colno, error) {
-         //    console.error("Unhandled Globa Error:", {
-         //        message: message,
-         //        source: source,
-         //        lineno: lineno,
-         //        colno: colno,
-         //        errorObject: error
-         //    });
-         //    // Optionally display a generic error message to the user
-         //    // const chatBox = document.getElementById("chatBox");
-         //    // if (chatBox) chatBox.innerHTML += `<div class="self-start bg-red-800 text-white p-2 rounded">A critical error occurred. Please check the console (F12).</div>`;
-         //    return true; // Prevents the default browser error handler
-         // };
-
-    </script>
-    <style>
-        #chatBox { scroll-behavior: smooth; }
-        /* Focus styles */
-        input:focus, button:focus, a:focus {
-            outline: 2px solid transparent;
-            outline-offset: 2px;
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.6); /* blue-400 */
-            transition: box-shadow 0.1s ease-in-out;
-        }
-        /* Scrollbar styles */
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(71, 85, 105, 0.7); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(100, 116, 139, 0.8); }
-        .scrollbar-thin { scrollbar-width: thin; scrollbar-color: rgba(71, 85, 105, 0.7) transparent; }
-        /* Canvas fallback */
-        canvas { min-height: 150px; background-color: rgba(51, 65, 85, 0.3); }
-        /* Placeholder text */
-        .placeholder-text { color: #94a3b8; font-size: 0.875rem; text-align: center; width: 100%; padding: 0.5rem; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FraudShield AI</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+
+  <style>
+    body {
+      background-color: #121212;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #1e1e1e;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    #siren {
+      font-size: 1.5rem;
+      margin-left: 10px;
+      color: grey;
+      transition: 0.5s;
+    }
+
+    #siren.alert {
+      color: red;
+      animation: flash 1s infinite;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    #signout-btn {
+      display: none;
+      padding: 8px 14px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .main-layout {
+      display: flex;
+      height: calc(100vh - 64px);
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      flex: 2;
+      border-right: 1px solid #333;
+    }
+
+    #chat-box {
+      flex-grow: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .message {
+      margin: 0.5rem 0;
+      padding: 0.75rem;
+      border-radius: 10px;
+      max-width: 75%;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background-color: #1f6feb;
+    }
+
+    .message.ai {
+      align-self: flex-start;
+      background-color: #333;
+    }
+
+    .input-container {
+      display: flex;
+      padding: 1rem;
+      border-top: 1px solid #444;
+      background-color: #1e1e1e;
+    }
+
+    .input-container input {
+      flex-grow: 1;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .input-container button {
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: #1f6feb;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    #upload-section {
+      display: none;
+      padding: 1rem;
+    }
+
+    .txn-card {
+      background: #1c1c1c;
+      padding: 15px;
+      border: 1px solid #333;
+      border-radius: 12px;
+      margin: 10px 0;
+      box-shadow: 0 0 5px rgba(0,255,100,0.2);
+    }
+
+    .txn-card div {
+      margin: 4px 0;
+    }
+
+    .score-bar {
+      margin-top: 10px;
+    }
+
+    .score-bar progress {
+      width: 60%;
+      height: 15px;
+      vertical-align: middle;
+      accent-color: red;
+      border-radius: 10px;
+    }
+
+    .analytics-container {
+      flex: 1;
+      padding: 1rem;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    canvas {
+      background: #222;
+      border-radius: 10px;
+      width: 100% !important;
+      height: auto !important;
+      max-height: 250px;
+    }
+
+    #recent-transactions {
+      background: #222;
+      padding: 1rem;
+      border-radius: 10px;
+      color: #ccc;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+
+    #recent-transactions h3 {
+      margin-top: 0;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .recent-entry {
+      border-bottom: 1px solid #444;
+      padding: 0.25rem 0;
+    }
+  </style>
 </head>
-<body class="flex w-screen h-screen bg-gradient-to-br from-slate-900 to-slate-700 text-gray-200 font-sans overflow-hidden">
 
-    <div id="signInForm" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 backdrop-blur-sm">
-        <div class="bg-slate-800 rounded-xl p-8 shadow-2xl w-full max-w-md border border-slate-700">
-            <h2 class="text-3xl font-bold mb-6 text-center text-white">Sign In</h2>
-            <form id="signInFormElement" onsubmit="handleSignIn(event)">
-                <div class="mb-4">
-                    <label for="username" class="block text-gray-400 text-sm font-bold mb-2">Username</label>
-                    <input type="text" id="username" placeholder="Enter your username" required autocomplete="username" class="shadow-inner appearance-none border border-slate-600 rounded w-full py-3 px-4 bg-slate-700 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-150 ease-in-out">
-                </div>
-                <div class="mb-6">
-                    <label for="password" class="block text-gray-400 text-sm font-bold mb-2">Password</label>
-                    <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password" class="shadow-inner appearance-none border border-slate-600 rounded w-full py-3 px-4 bg-slate-700 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-150 ease-in-out">
-                </div>
-                <p id="signInError" class="text-red-400 text-xs italic mb-4 h-4"></p>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline w-full transition-colors duration-200 shadow-lg">Sign In</button>
-                <button type="button" class="mt-4 text-blue-400 text-sm hover:underline w-full text-center" onclick="showCreateAccountForm()">Create Account</button>
-            </form>
-        </div>
+<body>
+  <header>
+    <h1>FraudShield AI Assistant <i id="siren" class="fa-solid fa-bell"></i></h1>
+    <div id="auth-buttons">
+      <div id="g_id_onload"
+        data-client_id="YOUR_GOOGLE_CLIENT_ID"
+        data-callback="handleCredentialResponse"
+        data-auto_prompt="false"></div>
+
+      <div class="g_id_signin"
+        data-type="standard"
+        data-size="medium"
+        data-theme="filled_black"
+        data-text="signin_with"
+        data-shape="pill"
+        data-logo_alignment="left"></div>
+
+      <button id="signout-btn" onclick="signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <div class="chat-container">
+      <div id="chat-box"></div>
+
+      <div class="input-container">
+        <input type="text" id="user-input" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+      </div>
+
+      <div id="upload-section">
+        <input type="file" id="csv-file">
+        <button onclick="uploadCSV()">Upload CSV</button>
+      </div>
     </div>
 
-    <div id="createAccountForm" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 backdrop-blur-sm hidden">
-        <div class="bg-slate-800 rounded-xl p-8 shadow-2xl w-full max-w-md border border-slate-700">
-             <h2 class="text-3xl font-bold mb-6 text-center text-white">Create Account</h2>
-             <form id="createAccountFormElement" onsubmit="handleCreateAccount(event)">
-                 <div class="mb-4">
-                     <label for="newUsername" class="block text-gray-400 text-sm font-bold mb-2">Username</label>
-                     <input type="text" id="newUsername" placeholder="Choose a username (min 3 chars)" required autocomplete="username" class="shadow-inner appearance-none border border-slate-600 rounded w-full py-3 px-4 bg-slate-700 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-green-500 transition duration-150 ease-in-out">
-                 </div>
-                 <div class="mb-4">
-                     <label for="newPassword" class="block text-gray-400 text-sm font-bold mb-2">Password</label>
-                     <input type="password" id="newPassword" placeholder="Create a password (min 6 chars)" required autocomplete="new-password" class="shadow-inner appearance-none border border-slate-600 rounded w-full py-3 px-4 bg-slate-700 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-green-500 transition duration-150 ease-in-out">
-                 </div>
-                 <div class="mb-6">
-                     <label for="confirmPassword" class="block text-gray-400 text-sm font-bold mb-2">Confirm Password</label>
-                     <input type="password" id="confirmPassword" placeholder="Confirm your password" required autocomplete="new-password" class="shadow-inner appearance-none border border-slate-600 rounded w-full py-3 px-4 bg-slate-700 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-green-500 transition duration-150 ease-in-out">
-                 </div>
-                 <p id="createAccountError" class="text-red-400 text-xs italic mb-4 h-4"></p>
-                 <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline w-full transition-colors duration-200 shadow-lg">Create Account</button>
-                 <button type="button" class="mt-4 text-blue-400 text-sm hover:underline w-full text-center" onclick="showSignInForm()">Already have an account? Sign In</button>
-             </form>
-        </div>
+    <div class="analytics-container">
+      <canvas id="barChart"></canvas>
+      <canvas id="lineChart"></canvas>
+      <div id="recent-transactions">
+        <h3>Recent Transactions</h3>
+        <div id="recent-list"></div>
+      </div>
     </div>
+  </div>
 
-    <div id="mainContent" class="flex flex-col w-full h-screen hidden">
-        <header class="w-full flex justify-between items-center p-4 bg-slate-900 border-b border-slate-700 shadow-md flex-shrink-0">
-            <div class="flex items-center space-x-4">
-                <h1 class="text-white text-2xl font-bold">FraudGuardAI</h1>
-                <div id="siren" class="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center transition-colors duration-300 shadow-inner" title="High Fraud Alert Indicator">
-                    <span class="text-white text-xl">🚨</span>
-                    <audio id="sirenSound" src="https://sosmp3.s3.eu-north-1.amazonaws.com/sos.mp3" preload="auto"></audio>
-                </div>
-            </div>
-            <div class="flex items-center space-x-4">
-                 <div id="headerSignInContainer" class="flex items-center space-x-2">
-                     <button id="signInButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-md text-sm transition-colors duration-200 border border-blue-500" onclick="showSignInForm()">Sign In</button>
-                     <button id="createAccountHeaderButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full shadow-md text-sm transition-colors duration-200 border border-green-500" onclick="showCreateAccountForm()">Create Account</button>
-                 </div>
-                 <div id="headerUserContainer" class="hidden flex items-center space-x-4">
-                     <span id="userDisplay" class="text-white text-lg font-medium"></span>
-                     <button id="signOutButton" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full shadow-md text-sm transition-colors duration-200 border border-red-500" onclick="handleSignOut()">Sign Out</button>
-                 </div>
-             </div>
-        </header>
+  <script>
+    let step = 0;
+    let barChart, lineChart;
 
-        <main class="flex flex-grow overflow-hidden bg-gradient-to-br from-slate-900 to-slate-700">
-            <aside class="w-1/5 flex-shrink-0 bg-slate-800/50 h-full flex flex-col justify-between text-white font-semibold text-sm p-4 border-r border-slate-700/50 overflow-y-auto custom-scrollbar">
-                <div>
-                    <div class="text-xs text-gray-400 uppercase mb-2 font-bold tracking-wider">Actions</div>
-                    <nav class="flex flex-col space-y-2 w-full">
-                        <a href="#" class="flex items-center space-x-2 cursor-pointer hover:bg-slate-700 p-2 w-full text-left rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" onclick="handleChatToBotClick()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.153-3.261A7.93 7.93 0 012 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd" /></svg>
-                            <span>Chat to Bot</span>
-                        </a>
-                        <a href="#" class="flex items-center space-x-2 cursor-pointer hover:bg-slate-700 p-2 w-full text-left rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50" onclick="triggerFileUpload()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
-                            <span>Upload CSV</span>
-                        </a>
-                        <a href="#" class="flex items-center space-x-2 cursor-pointer hover:bg-slate-700 p-2 w-full text-left rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50" onclick="handleSimulatedBankConnect()">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"> <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /> </svg>
-                             <span>Simulate Bank Connect</span>
-                        </a>
-                    </nav>
-                 </div>
-            </aside>
+    function appendMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+      msg.innerHTML = text;
+      document.getElementById("chat-box").appendChild(msg);
+      document.getElementById("chat-box").scrollTop = document.getElementById("chat-box").scrollHeight;
+    }
 
-            <section class="w-2/5 flex-shrink-0 m-4 h-[calc(100%-2rem)] bg-slate-800/70 flex flex-col justify-between rounded-xl p-4 border border-slate-700/50 shadow-lg">
-                <div id="chatBox" class="bg-slate-700/50 h-full w-full rounded-lg p-3 overflow-y-auto flex flex-col space-y-3 mb-3 custom-scrollbar scrollbar-thin">
-                 </div>
-                 <div class="w-full flex items-center space-x-2 pt-3 border-t border-slate-700/50">
-                    <input id="userInput" type="text" placeholder="Ask about fraud or enter details..." class="flex-grow p-3 border border-slate-600 rounded-lg bg-slate-700 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition duration-150 ease-in-out shadow-inner">
-                    <button onclick="handleUserResponse(document.getElementById('userInput').value)" class="p-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors duration-200 shadow-md flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-800">Send</button>
-                </div>
-                <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleFileUpload(event)">
-            </section>
+    function addRecentTransaction(txn) {
+      const container = document.getElementById("recent-list");
+      const div = document.createElement("div");
+      div.classList.add("recent-entry");
+      div.textContent = `${txn.Amount || 'Unknown'} - ${txn.Merchant || 'Merchant'} (${txn.Location || 'Location'})`;
+      container.prepend(div);
+      if (container.children.length > 10) {
+        container.removeChild(container.lastChild);
+      }
+    }
 
-            <section class="w-2/5 flex-shrink-0 m-4 ml-0 h-[calc(100%-2rem)] flex flex-col rounded-xl p-4 overflow-y-auto space-y-4 custom-scrollbar scrollbar-thin">
-                 <div id="graphContainer" class="w-full h-1/3 bg-slate-800/70 rounded-lg p-3 flex justify-center items-center border border-slate-700/50 shadow-lg min-h-[200px] relative">
-                     <span class="placeholder-text absolute">Graph will load here</span>
-                     </div>
-                 <div id="pieContainer" class="w-full h-1/3 bg-slate-800/70 rounded-lg p-3 flex justify-center items-center border border-slate-700/50 shadow-lg min-h-[200px] relative">
-                    <span class="placeholder-text absolute">Pie chart will load here</span>
-                     </div>
-                 <div id="riskCounters" class="w-full bg-slate-800/70 rounded-lg p-3 border border-slate-700/50 shadow-lg">
-                     <h3 class="text-white font-semibold mb-2 text-base border-b border-slate-700 pb-2">Session Analysis</h3>
-                     <div class="flex justify-around text-center text-sm mt-2">
-                         <div> <span class="block text-green-400 font-bold text-xl" id="sessionLowCount">0</span> <span class="text-xs text-gray-400">Low Risk</span> </div>
-                         <div> <span class="block text-yellow-400 font-bold text-xl" id="sessionMedCount">0</span> <span class="text-xs text-gray-400">Medium Risk</span> </div>
-                         <div> <span class="block text-red-400 font-bold text-xl" id="sessionHighCount">0</span> <span class="text-xs text-gray-400">High Risk</span> </div>
-                     </div>
-                 </div>
-                 <div class="w-full bg-slate-800/70 rounded-lg p-3 border border-slate-700/50 shadow-lg flex-grow flex flex-col min-h-[150px]">
-                     <h3 class="text-white font-semibold mb-2 text-base flex-shrink-0 border-b border-slate-700 pb-2">Recent Transactions</h3>
-                     <ul id="recentTransactions" class="text-white text-sm overflow-y-auto flex-grow custom-scrollbar">
-                         <li class="placeholder-text p-2">No recent transactions</li>
-                         </ul>
-                 </div>
-                 <div id="dangerBox" class="hidden bg-red-600/90 text-white p-3 rounded-md text-center font-bold w-full shadow-xl border border-red-500">
-                     🚨 High Risk Transaction Detected! 🚨
-                 </div>
-            </section>
-        </main>
-    </div>
+    function sendMessage() {
+      const input = document.getElementById("user-input");
+      const text = input.value.trim();
+      if (!text) return;
+      appendMessage("user", text);
+      input.value = "";
 
+      if (step === 0) {
+        appendMessage("ai", "Hi there! How can I help you? Would you like to proceed with <strong>csv</strong> analysis or provide <strong>details</strong>?");
+        step = 1;
+        return;
+      }
+
+      if (step === 1) {
+        if (text.toLowerCase() === "csv") {
+          document.getElementById("upload-section").style.display = "block";
+          appendMessage("ai", "Please upload your CSV file for analysis.");
+          step = 2;
+          return;
+        } else if (text.toLowerCase() === "details") {
+          appendMessage("ai", "Please provide transaction details in this format:<br><strong>Amount, Merchant, Location, Time</strong>");
+          step = 3;
+          return;
+        } else {
+          appendMessage("ai", "⚠️ Invalid choice. Please type <strong>csv</strong> or <strong>details</strong> to proceed.");
+          return;
+        }
+      }
+
+      fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        appendMessage("ai", data.response);
+        updateBarChart(data.stats);
+        updateLineChart(data.trend);
+      });
+    }
+
+    function uploadCSV() {
+      const fileInput = document.getElementById("csv-file");
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select a CSV file!");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      appendMessage("ai", "📤 Uploading and analyzing your CSV...");
+      document.getElementById("upload-section").style.display = "none";
+
+      fetch("http://localhost:8000/check_csv", {
+        method: "POST",
+        body: formData,
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.suspicious && data.suspicious.length > 0) {
+          const siren = document.getElementById("siren");
+          const sirenSound = document.getElementById("siren-sound");
+          siren.classList.add("alert");
+          sirenSound.currentTime = 0;
+          sirenSound.play();
+
+          appendMessage("ai", `🚨 <strong>${data.suspicious.length} suspicious transactions detected!</strong>`);
+
+          data.suspicious.forEach((txn, index) => {
+            const card = document.createElement("div");
+            card.classList.add("txn-card");
+
+            let score = Math.floor(Math.random() * 40 + 60);
+            let txnHTML = `<strong>Transaction #${index + 1}</strong><br>`;
+            for (const [key, value] of Object.entries(txn)) {
+              txnHTML += `<div><strong>${key}:</strong> ${value}</div>`;
+            }
+            txnHTML += `<div class="score-bar"><span>Fraud Confidence:</span> <progress value="${score}" max="100"></progress> ${score}%</div>`;
+
+            card.innerHTML = txnHTML;
+            document.getElementById("chat-box").appendChild(card);
+            addRecentTransaction(txn);
+          });
+
+          updateBarChart(data.barData);
+          updateLineChart(data.lineData);
+        } else {
+          appendMessage("ai", data.message || "No suspicious transactions found.");
+        }
+      });
+    }
+
+    function updateBarChart(data = { Safe: 70, Suspicious: 30 }) {
+      const labels = Object.keys(data);
+      const values = Object.values(data);
+      barChart.data.labels = labels;
+      barChart.data.datasets[0].data = values;
+      barChart.update();
+    }
+
+    function updateLineChart(data = [12, 19, 3, 5, 2, 3, 9]) {
+      lineChart.data.datasets[0].data = data;
+      lineChart.update();
+    }
+
+    window.onload = () => {
+      const barCtx = document.getElementById('barChart').getContext('2d');
+      barChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Safe', 'Suspicious'],
+          datasets: [{
+            label: 'Transaction Summary',
+            data: [70, 30],
+            backgroundColor: ['#4caf50', '#f44336'],
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: '#fff' } } },
+          scales: {
+            x: { ticks: { color: '#fff' } },
+            y: { ticks: { color: '#fff' } }
+          }
+        }
+      });
+
+      const lineCtx = document.getElementById('lineChart').getContext('2d');
+      lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Transactions',
+            data: [12, 19, 3, 5, 2, 3, 9],
+            borderColor: '#1f6feb',
+            tension: 0.1
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: '#fff' } } },
+          scales: {
+            x: { ticks: { color: '#fff' } },
+            y: { ticks: { color: '#fff' } }
+          }
+        }
+      });
+    };
+
+    function handleCredentialResponse(response) {
+      const userData = jwt_decode(response.credential);
+      console.log("User signed in:", userData);
+
+      document.querySelector('.g_id_signin').style.display = "none";
+      document.getElementById('signout-btn').style.display = "inline-block";
+      appendMessage("ai", `👋 Welcome, ${userData.name}`);
+    }
+
+    function signOut() {
+      google.accounts.id.disableAutoSelect();
+      localStorage.clear();
+      document.getElementById('signout-btn').style.display = "none";
+      document.querySelector('.g_id_signin').style.display = "inline-block";
+      appendMessage("ai", `🔒 Signed out successfully.`);
+    }
+  </script>
+
+  <audio id="siren-sound" src="https://sosmp3.s3.eu-north-1.amazonaws.com/sos.mp3"></audio>
 </body>
 </html>
