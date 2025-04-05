@@ -34,3 +34,10 @@ An AI-powered fraud detection assistant with real-time chart visualizations, bui
 ```bash
 git clone https://github.com/gomit-dev/FraudShield_AI.git
 cd FraudShield_AI
+```
+
+---
+
+### 📸 Screenshots
+
+![FraudShield AI UI](assets/Screenshot.png)
