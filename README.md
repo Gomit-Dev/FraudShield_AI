@@ -40,4 +40,4 @@ cd FraudShield_AI
 
 ### 📸 Screenshots
 
-![FraudShield AI UI](assets/Screenshot.png)
+![FraudShield AI UI](assets/Screenshot 2025-04-05 170821.png)
