@@ -610,15 +610,112 @@
 
   
 
-  <section class="flex justify-center my-12 text-center py-20">
-    <div class="bg-rose-100/75 p-8 shadow-lg rounded-lg w-3/4">
-      <h2 class="text-2xl font-bold text-center mb-1">Ready to Secure Your Banking?</h2>     
-      <p class="text-gray-700 text-center mb-6">Start detecting frauds in transactions with FraudShield AI today.</p>
+<section class="flex justify-center my-6 md:my-12 text-center py-12 md:py-20 px-4">
+  <div class="bg-rose-100/75 p-6 md:p-8 shadow-lg rounded-lg w-full md:w-3/4 lg:w-2/3 xl:w-1/2 relative overflow-hidden group transition-all duration-500 hover:shadow-xl hover:bg-rose-200/80">
+    <!-- Animated background elements -->
+    <div class="absolute -top-10 -left-10 w-16 h-16 md:w-20 md:h-20 bg-red-400 rounded-full filter blur-xl opacity-20 animate-float"></div>
+    <div class="absolute -bottom-5 -right-5 w-16 h-16 md:w-24 md:h-24 bg-pink-300 rounded-full filter blur-xl opacity-20 animate-float-delay"></div>
+    
+    <!-- Main content -->
+    <div class="relative z-10 transform transition-all duration-300 group-hover:scale-[1.02]">
+      <h2 class="text-2xl sm:text-3xl font-bold text-center mb-3 bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent animate-text-shimmer">
+        Ready to Secure Your Banking?
+      </h2>     
+      <p class="text-gray-700 text-center mb-6 md:mb-8 text-base sm:text-lg transition-all duration-300 group-hover:text-gray-800">
+        Start detecting fraud in transactions with FraudShield AI today.
+      </p>
 
-      <a href="home.html" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600">Try FraudShield AI Now →</a>
+      <!-- Glowing animated button -->
+      <div class="relative inline-block">
+        <a href="home.html" class="relative z-10 bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-medium text-base sm:text-lg shadow-lg hover:shadow-red-300/50 transition-all duration-300 hover:scale-105 transform hover:brightness-110 animate-pulse-slow">
+          Try FraudShield AI Now
+          <span class="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+        </a>
+        <span class="absolute -z-0 -inset-1 sm:-inset-2 bg-red-400 rounded-lg blur-md opacity-70 group-hover:opacity-100 transition-all duration-500 animate-pulse-slower"></span>
+      </div>
+      
+      <!-- Animated security badge -->
+      <div class="mt-6 md:mt-8 flex justify-center">
+        <div class="flex items-center bg-white/80 px-3 py-1 sm:px-4 sm:py-2 rounded-full border border-red-200 animate-bounce-slow">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span class="ml-2 text-xs sm:text-sm font-medium text-gray-700">AI-Powered Fraud Detection</span>
+        </div>
+      </div>
     </div>
-  </section>
+  </div>
+</section>
 
+<style>
+/* Custom animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes float-delay {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes pulse-slower {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.05); opacity: 0.4; }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes text-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delay {
+  animation: float-delay 7s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.animate-pulse-slower {
+  animation: pulse-slower 4s ease-in-out infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 5s ease-in-out infinite;
+}
+
+.animate-text-shimmer {
+  background-size: 200% auto;
+  animation: text-shimmer 3s linear infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .group-hover\:scale-\[1\.02\] {
+    transform: scale(1);
+  }
+}
+</style>
+
+
+  
   
 
    <footer class="bg-gradient-to-b from-gray-100 to-gray-200 py-12 text-center text-gray-600 overflow-hidden">
