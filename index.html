@@ -248,25 +248,114 @@
 </style>
 
 
+
+
+
+  <section class="flex justify-center flex-wrap gap-8 my-12 px-4">
+    <!-- Card 1 -->
+    <div class="group bg-white p-8 shadow-lg rounded-lg w-80 text-center relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:-translate-y-2">
+        <!-- Gradient background effect on hover -->
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        
+        <div class="relative z-10">
+            <!-- Emoji with bounce animation -->
+            <div class="text-4xl mb-4 inline-block group-hover:animate-bounce">🔒</div>
+            
+            <!-- Title with underline animation -->
+            <h3 class="text-xl font-bold mb-2 relative inline-block">
+                <span>Proactive Security</span>
+                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-500 group-hover:w-full transition-all duration-300"></span>
+            </h3>
+            
+            <!-- Text with fade-in effect -->
+            <p class="text-gray-500 transition-opacity duration-300 group-hover:opacity-90">
+                Quickly spot and prevent fraudulent transactions with our powerful AI-driven system.
+            </p>
+            
+            <!-- Hidden learn more link that appears on hover -->
+            <a href="#" class="mt-4 inline-block text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                Learn more →
+            </a>
+        </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="group bg-white p-8 shadow-lg rounded-lg w-80 text-center relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:-translate-y-2">
+        <!-- Gradient background effect on hover -->
+        <div class="absolute inset-0 bg-gradient-to-br from-green-50 to-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        
+        <div class="relative z-10">
+            <!-- Emoji with shake animation -->
+            <div class="text-4xl mb-4 inline-block group-hover:animate-shake">📊</div>
+            
+            <!-- Title with underline animation -->
+            <h3 class="text-xl font-bold mb-2 relative inline-block">
+                <span>Intelligent Analytics</span>
+                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-500 group-hover:w-full transition-all duration-300"></span>
+            </h3>
+            
+            <!-- Text with fade-in effect -->
+            <p class="text-gray-500 transition-opacity duration-300 group-hover:opacity-90">
+                Analyze patterns and behaviors to predict and prevent potential fraud threats.
+            </p>
+            
+            <!-- Hidden learn more link that appears on hover -->
+            <a href="#" class="mt-4 inline-block text-green-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                Learn more →
+            </a>
+        </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="group bg-white p-8 shadow-lg rounded-lg w-80 text-center relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:-translate-y-2">
+        <!-- Gradient background effect on hover -->
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        
+        <div class="relative z-10">
+            <!-- Emoji with pulse animation -->
+            <div class="text-4xl mb-4 inline-block group-hover:animate-pulse">🤖</div>
+            
+            <!-- Title with underline animation -->
+            <h3 class="text-xl font-bold mb-2 relative inline-block">
+                <span>AI Chatbot Support</span>
+                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-500 group-hover:w-full transition-all duration-300"></span>
+            </h3>
+            
+            <!-- Text with fade-in effect -->
+            <p class="text-gray-500 transition-opacity duration-300 group-hover:opacity-90">
+                Instant help through an intelligent chatbot trained for banking fraud scenarios.
+            </p>
+            
+            <!-- Hidden learn more link that appears on hover -->
+            <a href="#" class="mt-4 inline-block text-purple-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                Learn more →
+            </a>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Custom animations */
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    @keyframes shake {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-5deg); }
+        75% { transform: rotate(5deg); }
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    .animate-bounce { animation: bounce 0.8s ease infinite; }
+    .animate-shake { animation: shake 0.5s ease infinite; }
+    .animate-pulse { animation: pulse 1s ease infinite; }
+</style>
   
 
-  <section class="flex justify-center space-x-6 my-12">
-    <div class="bg-white p-8 shadow-lg rounded-lg w-80 text-center">
-      <div class="text-4xl mb-4">🔒</div>
-      <h3 class="text-xl font-bold mb-2">Proactive Security</h3>
-      <p class="text-gray-500">Quickly spot and prevent fraudulent transactions with our powerful AI-driven system.</p>
-    </div>
-    <div class="bg-white p-8 shadow-lg rounded-lg w-80 text-center">
-      <div class="text-4xl mb-4">📊</div>
-      <h3 class="text-xl font-bold mb-2">Intelligent Analytics</h3>
-      <p class="text-gray-500">Analyze patterns and behaviors to predict and prevent potential fraud threats.</p>
-    </div>
-    <div class="bg-white p-8 shadow-lg rounded-lg w-80 text-center">
-      <div class="text-4xl mb-4">🤖</div>
-      <h3 class="text-xl font-bold mb-2">AI Chatbot Support</h3>
-      <p class="text-gray-500">Instant help through an intelligent chatbot trained for banking fraud scenarios.</p>
-    </div>
-  </section>
   
 
   
