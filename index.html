@@ -13,11 +13,7 @@
   
 <body class="bg-gray-50 text-gray-800 font-sans">
 
-      <button class="goto bg-red-500 fixed p-3 hover:bg-green-500 rounded-full bottom-6 right-4 md:right-6 transition-all duration-300 z-[99] shadow-lg shadow-blue-200/70 hover:shadow-green-300/80 group active:scale-95">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black group-hover:text-white group-hover:translate-y-[-2px] transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-        </svg>
-      </button>
+     
 
   
      <header class="bg-white flex justify-between items-center shadow-lg py-4 px-[45px] sticky top-0 w-full z-[999]">
@@ -931,29 +927,6 @@ aboutBtn.addEventListener("click", () => {
 });
 
 
-    
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.querySelector(".goto");
-  const footer = document.querySelector("footer");
-
-  window.addEventListener("scroll", () => {
-    const windowHeight = window.innerHeight;
-    const footerTop = footer.getBoundingClientRect().top;
-
-    if (window.scrollY > 300 && footerTop > windowHeight) {
-      btn.classList.remove("hidden");
-    } else {
-      btn.classList.add("hidden");
-    }
-  });
-
-  btn.addEventListener("click", () => {
-    document.getElementById("page1").scrollIntoView({ behavior: 'smooth' });
-  });
-
-  btn.classList.add("opacity-100");
-btn.classList.remove("opacity-0");
-});
 
   </script>
 
