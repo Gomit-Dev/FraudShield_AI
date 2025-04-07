@@ -359,12 +359,70 @@
   
 
   
-  <section class="flex justify-center my-12">
-    <div class="bg-white p-8 shadow-lg rounded-lg w-1/2">
-      <h3 class="text-2xl font-bold mb-4">What is FraudShield AI?</h3>
-      <p class="text-gray-500">FraudShield AI is an innovative AI-powered solution designed to safeguard online banking by identifying and mitigating fraud risks in banking transactions.</p>
+  <section class="flex justify-center my-16 px-4">
+    <div class="relative group">
+        <!-- Background decoration (animated) -->
+        <div class="absolute -inset-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl opacity-75 group-hover:opacity-100 blur-md group-hover:blur-lg transition-all duration-500 animate-pulse"></div>
+        
+        <!-- Main card -->
+        <div class="bg-white p-8 shadow-2xl rounded-xl w-full max-w-2xl relative z-10 transform transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-3xl">
+            <!-- Animated title underline -->
+            <h3 class="text-3xl font-bold mb-6 relative inline-block">
+                <span class="relative z-10 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                    What is FraudShield AI?
+                </span>
+                <span class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></span>
+            </h3>
+            
+            <!-- Content with animated reveal -->
+            <div class="overflow-hidden">
+                <p class="text-gray-600 text-lg leading-relaxed transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100">
+                    FraudShield AI is an <span class="font-semibold text-blue-600">innovative AI-powered solution</span> designed to safeguard online banking by identifying and mitigating fraud risks in real-time. Using <span class="font-semibold text-purple-600">advanced machine learning algorithms</span>, it analyzes transaction patterns, detects anomalies, and prevents fraudulent activities before they occur.
+                </p>
+                
+                <!-- Additional hidden content that appears on hover -->
+                <div class="mt-6 grid grid-cols-2 gap-4 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-200">
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Real-time Protection</h4>
+                            <p class="text-sm text-gray-500">Monitors transactions 24/7 with 99.8% accuracy</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-purple-100 p-2 rounded-lg mr-3">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Lightning Fast</h4>
+                            <p class="text-sm text-gray-500">Processes decisions in under 50ms</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Animated call-to-action button -->
+            <div class="mt-8 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-300">
+                <button class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300">
+                    Learn More About Our Technology
+                    <svg class="w-4 h-4 inline-block ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
-  </section>
+</section>
+
+  
+
+  
 
 
   
